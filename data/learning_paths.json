@@ -1,0 +1,17 @@
+{
+  "paths": [
+    {
+      "id": "new-intern",
+      "title": "New Intern — First Week",
+      "description": "Follow this in order. You'll finish knowing what the PS Core is, how a subscriber gets on the network, and where to look when something fails.",
+      "estimated_minutes": 90,
+      "modules": [
+        "start-here",
+        "overview",
+        "topology",
+        "imsi",
+        "troubleshooting"
+      ]
+    }
+  ]
+}

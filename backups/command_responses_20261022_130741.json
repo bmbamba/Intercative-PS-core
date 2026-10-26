@@ -1,0 +1,7 @@
+{
+  "responses": {
+    "LST OPTGPRS": "+++    HSS    2026-10-19 11:23:15\nO&M    #1001\n%%LST OPTGPRS:;\nRETCODE = 0  Operation succeeded.\n\n    Subscriber IMSI   = 650010114416123\n    MSISDN            = 265888073002\n    OPTGPRS Index     = 0\n    APN               = internet\n    PDP Type          = IPV4\n(Number of results = 1)\n---    END",
+    "DSP SMCTXT": "+++    USN    2026-10-19 11:25:10\nO&M    #2001\n%%DSP SMCTXT:;\nRETCODE = 0  Operation succeeded.\n\n    IMSI              = 650010114416123\n    RAT Type          = S1 (4G/LTE)\n    MME UE Context ID = 0x1a2b3c4d\n    Attach Time       = 2026-10-19 09:12:34\n(Number of results = 1)\n---    END",
+    "DSP CPPDPCTXT": "+++    CGW    2026-10-19 11:26:15\nO&M    #3001\n%%DSP CPPDPCTXT:;\nRETCODE = 0  Operation succeeded.\n\n    IMSI              = 650010114416123\n    APN               = internet\n    PDP Address       = 10.180.44.17\n    Status            = ACTIVE\n(Number of results = 1)\n---    END"
+  }
+}

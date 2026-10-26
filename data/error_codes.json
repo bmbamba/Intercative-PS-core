@@ -1,0 +1,22 @@
+{
+  "entries": [
+    {
+      "code": "0",
+      "category": "MML",
+      "meaning": "Operation succeeded",
+      "action": "Continue to the next step."
+    },
+    {
+      "code": "18518",
+      "category": "MML",
+      "meaning": "Record does not exist",
+      "action": "Subscriber not attached; check SIM, device power, or try a different phone."
+    },
+    {
+      "code": "20001",
+      "category": "CCA",
+      "meaning": "CCA success (charging)",
+      "action": "Charging is successful. Continue."
+    }
+  ]
+}

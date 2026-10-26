@@ -1,0 +1,45 @@
+{
+  "scenarios": [
+    {
+      "id": "cant-browse",
+      "title": "Subscriber calls: 'I can't browse'",
+      "description": "A single subscriber cannot reach the internet. Walk through the diagnosis and fix.",
+      "steps": [
+        {
+          "situation": "A customer calls in. Their phone shows 4G but no pages load. Other customers on the same site are fine. What's your first move?",
+          "choices": [
+            {
+              "text": "Ask for the IMSI and MSISDN, then open the subscriber profile",
+              "correct": true,
+              "feedback": "Right first step.",
+              "explain": "You can't troubleshoot without a subscriber identity. Capture IMSI, MSISDN, APN, and node in the Subscriber Context panel before doing anything else."
+            },
+            {
+              "text": "Restart the UGW to clear the issue",
+              "correct": false,
+              "feedback": "Never restart a live node for a single subscriber.",
+              "explain": "A UGW restart affects thousands of subscribers. Single-subscriber issues are almost always profile, APN, or session-related."
+            }
+          ]
+        },
+        {
+          "situation": "You have the IMSI and open the HSS profile. You run LST OPTGPRS. The subscriber has no APN listed. What now?",
+          "choices": [
+            {
+              "text": "Add the APN to the profile with a change ticket",
+              "correct": true,
+              "feedback": "Correct — with the ticket, first.",
+              "explain": "APN provisioning is a production change. Get the change ticket approved, then run MOD OPTGPRS / ADDPDPCTX."
+            },
+            {
+              "text": "Tell the subscriber to reboot their phone",
+              "correct": false,
+              "feedback": "Rebooting won't add a missing APN.",
+              "explain": "A missing APN on the profile is not a device issue."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

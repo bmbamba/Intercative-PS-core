@@ -1,0 +1,2000 @@
+{
+  "modules": [
+    {
+      "id": "start-here",
+      "title": "Start Here - New to PS Core?",
+      "icon": "🚀",
+      "category": "Getting Started",
+      "minutes": 15,
+      "subtitle": "A guided first read. Follow these five modules in order.",
+      "blocks": [
+        {
+          "type": "callout",
+          "variant": "success",
+          "title": "Read this if it is your first shift",
+          "text": "You do not need to read the whole SOP. Work through the five modules below in order. Each one takes 3 to 8 minutes. When you are done, you will know what the PS Core is, how a subscriber gets on the network, and where to look when something fails."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "The path"
+        },
+        {
+          "type": "steps",
+          "items": [
+            {
+              "title": "Purpose, Scope & Operational Rules",
+              "description": "Understand what this SOP covers and the seven rules you must never break.",
+              "expected": "You can name at least three rules from memory."
+            },
+            {
+              "title": "PS Core Topology & Nodes",
+              "description": "Learn what USN, UGW, HSS, DRA, CBS, UPCF, CG, and FW actually do.",
+              "expected": "You can point at any node and say whether it is control plane or user plane."
+            },
+            {
+              "title": "Subscriber Identification - IMSI",
+              "description": "The IMSI is how the network knows who is who. Learn the structure.",
+              "expected": "You can read 650010114416xx out loud and say which part is TNM and which part is the SIM."
+            },
+            {
+              "title": "Attach & PDP Session Establishment",
+              "description": "How a phone gets on the network and gets a data session.",
+              "expected": "You can walk through the 16-step LTE attach without looking at the table."
+            },
+            {
+              "title": "Troubleshooting: Subscriber Issues",
+              "description": "A step-by-step chain for the most common problem: subscriber cannot browse.",
+              "expected": "You have clicked through the full chain once, without a live call."
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "How to use this app while you learn"
+        },
+        {
+          "type": "checklist",
+          "id": "start-here-habits",
+          "title": "Habits to build on day one",
+          "items": [
+            "Put your name in the OPERATOR box in the sidebar before you do anything else",
+            "Fill in the Subscriber Context (IMSI, MSISDN, APN, Node) before opening any module",
+            "Read the notes under every command - they explain WHY, not just what",
+            "Use the search box instead of scrolling",
+            "Bookmark the modules you use most",
+            "Never copy a command whose placeholder still says xx"
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Words you will hear on your first shift"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Term",
+            "What it means in one line"
+          ],
+          "rows": [
+            [
+              "Attach",
+              "The phone telling the network: I am here, let me in."
+            ],
+            [
+              "PDP context",
+              "The data session once the phone is attached - the pipe for internet."
+            ],
+            [
+              "APN",
+              "Which network the phone wants to use, e.g. internet or mms."
+            ],
+            [
+              "IMSI",
+              "The SIM permanent ID number (15 digits, starts 65001 for TNM)."
+            ],
+            [
+              "MSISDN",
+              "The phone number. Stays the same even if the SIM swaps."
+            ],
+            [
+              "HSS",
+              "The database that holds every subscriber profile."
+            ],
+            [
+              "USN",
+              "The node that handles signalling - attach, detach, mobility."
+            ],
+            [
+              "UGW",
+              "The node that handles the user actual traffic and gives them an IP."
+            ],
+            [
+              "DRA",
+              "The switchboard that routes Diameter messages between nodes."
+            ],
+            [
+              "Trace",
+              "A live log of what one subscriber did on the network - your best debugging tool."
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "The five most useful commands, and what they tell you"
+        },
+        {
+          "type": "command",
+          "title": "1. Is the subscriber attached, and on what network?",
+          "language": "mml",
+          "code": "DSP SMCTXT;",
+          "notes": "This is the very first thing you run. It tells you whether the subscriber is even on the network, and which RAT (2G, 3G, 4G) they are using right now.",
+          "on_failure": "If it returns no record, the subscriber is not attached. Check the SIM, the phone, and the HSS profile before doing anything else."
+        },
+        {
+          "type": "command",
+          "title": "2. Does the subscriber profile have the right APN?",
+          "language": "mml",
+          "code": "LST OPTGPRS;",
+          "notes": "The GPRS profile on the HSS lists every APN the subscriber is allowed to use. If the APN they are trying to reach is not in this list, they cannot get data.",
+          "on_failure": "If the APN is missing, you will need to add it - see the APN Provisioning module. Do NOT add it without a change ticket."
+        },
+        {
+          "type": "command",
+          "title": "3. Are any of the subscriber services locked?",
+          "language": "mml",
+          "code": "LST LCK;",
+          "notes": "Any service listed as TRUE is locked - usually because of unpaid billing, a fraud flag, or a customer request. A locked service blocks data even when everything else looks fine.",
+          "on_failure": "If something is TRUE, it is not a network problem - it is a billing or customer-service matter. Escalate, do not fix it yourself."
+        },
+        {
+          "type": "command",
+          "title": "4. Is the subscriber 4G-enabled?",
+          "language": "mml",
+          "code": "LST EPS;",
+          "notes": "On LTE, the subscriber SIM must be EPS-enabled to attach. If this comes back empty, the subscriber cannot use 4G at all - even if their phone is fine.",
+          "on_failure": "If not EPS-enabled, provision EPS in the HSS (with a change ticket), then ask the customer to re-attach."
+        },
+        {
+          "type": "command",
+          "title": "5. Is the UGW giving the subscriber a session?",
+          "language": "mml",
+          "code": "DSP CPPDPCTXT;   // on the CGW (control)\nDSP UPPDPCTXT;    // on the DGW (data)",
+          "notes": "These two commands show the PDP context on the gateway side. If the subscriber is attached but has no traffic, this is where you check whether the gateway actually built the session.",
+          "on_failure": "If both volumes are zero, the session never established. Enable a trace and see where it fails - usually a policy or charging rejection."
+        },
+        {
+          "type": "link",
+          "target": "overview",
+          "label": "Open the full SOP overview"
+        }
+      ]
+    },
+    {
+      "id": "overview",
+      "title": "Purpose, Scope & Operational Rules",
+      "icon": "📘",
+      "category": "Getting Started",
+      "minutes": 5,
+      "reviewed": "2026-08-01",
+      "subtitle": "Standard Operating Procedure - PS Core Networks.",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Purpose"
+        },
+        {
+          "type": "paragraph",
+          "text": "This SOP collects the working knowledge, procedures and lessons learned for PS Core operations. It helps engineers understand the PS Core environment, run routine checks, troubleshoot subscriber and network problems, carry out approved configuration and provisioning work, monitor network performance, and escalate issues with enough technical evidence."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Scope"
+        },
+        {
+          "type": "paragraph",
+          "text": "Covers the PS Core environment supporting 2G, 3G, and 4G packet-switched services. Includes topology, protocols, subscriber identification, attach and PDP procedures, static routing, APN provisioning, KPIs and alarms, troubleshooting and tracing, Huawei support and ticket escalation, CHR and Health Check collection, license management, and roaming."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "General Operational Rules"
+        },
+        {
+          "type": "checklist",
+          "id": "general-rules",
+          "title": "Rules You Must Follow",
+          "items": [
+            "Use only approved commands, scripts, tools, and procedures.",
+            "Never change production configuration without authorization.",
+            "Record subscriber, APN, node, time, and symptom before troubleshooting.",
+            "Keep screenshots, traces, CHR, and Health Check as evidence.",
+            "Verify after every change.",
+            "Protect subscriber information at all times.",
+            "Confirm commands against the current software version."
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Approval"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Role",
+            "Name"
+          ],
+          "rows": [
+            [
+              "Written by",
+              "Fraser Msusa, Tatyana Chingeni"
+            ],
+            [
+              "Approved by",
+              "Basheer Chilungo"
+            ],
+            [
+              "Supervisor",
+              "Angella Gobede"
+            ]
+          ]
+        },
+        {
+          "type": "quiz",
+          "title": "Quick check",
+          "items": [
+            {
+              "question": "Before you start troubleshooting, what should you record?",
+              "options": [
+                "Nothing until you have found the cause",
+                "Only the node name",
+                "Subscriber, APN, node, time and symptom",
+                "Only the subscriber's IMSI"
+              ],
+              "answer": 2,
+              "explain": "This is one of the General Operational Rules."
+            },
+            {
+              "question": "When may you change production configuration?",
+              "options": [
+                "Whenever the change looks safe",
+                "During any fault",
+                "Whenever a colleague asks",
+                "Only with authorization"
+              ],
+              "answer": 3,
+              "explain": "Never change production configuration without authorization."
+            },
+            {
+              "question": "What should you do after every change?",
+              "options": [
+                "Restart the node",
+                "Verify it",
+                "Close the ticket",
+                "Nothing; the command output is enough"
+              ],
+              "answer": 1,
+              "explain": "Verify after every change."
+            },
+            {
+              "question": "What should you keep as evidence?",
+              "options": [
+                "Only the command history",
+                "Only the ticket number",
+                "Screenshots, traces, CHR and Health Check"
+              ],
+              "answer": 2,
+              "explain": "Keep them so the work can be reviewed and escalated."
+            }
+          ]
+        },
+        {
+          "type": "link",
+          "target": "topology",
+          "label": "See also: PS Core Topology & Nodes"
+        }
+      ]
+    },
+    {
+      "id": "topology",
+      "title": "PS Core Topology & Nodes",
+      "icon": "🗺",
+      "category": "Getting Started",
+      "minutes": 8,
+      "reviewed": "2026-08-01",
+      "subtitle": "Two regions: LLG (North) and LMB (South).",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Network Diagram"
+        },
+        {
+          "type": "image",
+          "file": "topology.png",
+          "caption": "LLG (North) and LMB (South) regions: USN, UGW, HSS, DRA, CBS, UPCF, CG, FW"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Core Nodes"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Node",
+            "Role",
+            "3GPP Function"
+          ],
+          "rows": [
+            [
+              "USN",
+              "Control plane - mobility & session mgmt",
+              "MME / SGSN"
+            ],
+            [
+              "UGW",
+              "User plane - anchor, IP allocation, QoS",
+              "SGW / PGW / GGSN"
+            ],
+            [
+              "HSS",
+              "Subscriber database, authentication",
+              "HSS / HLR"
+            ],
+            [
+              "CG",
+              "Charging records collection",
+              "CG"
+            ],
+            [
+              "UPCF",
+              "Policy, bandwidth, quota control",
+              "PCRF"
+            ],
+            [
+              "CBS",
+              "Real-time charging and balance",
+              "OCS"
+            ],
+            [
+              "DRA",
+              "Diameter routing between nodes",
+              "DRA"
+            ],
+            [
+              "FW",
+              "Edge firewall (Gi/SGi)",
+              "Firewall"
+            ]
+          ]
+        },
+        {
+          "type": "quiz",
+          "title": "Quick check",
+          "items": [
+            {
+              "question": "Which node is the user-plane anchor that allocates IP addresses?",
+              "options": [
+                "UGW",
+                "USN",
+                "HSS",
+                "DRA"
+              ],
+              "answer": 0,
+              "explain": "UGW is the user plane: anchor, IP allocation and QoS (SGW / PGW / GGSN)."
+            },
+            {
+              "question": "Which node is the subscriber database and does authentication?",
+              "options": [
+                "UPCF",
+                "HSS",
+                "CG",
+                "CBS"
+              ],
+              "answer": 1,
+              "explain": "The HSS (HSS / HLR) holds subscriber data."
+            },
+            {
+              "question": "Which node routes Diameter between the other nodes?",
+              "options": [
+                "FW",
+                "CG",
+                "DRA",
+                "USN"
+              ],
+              "answer": 2,
+              "explain": "DRA: Diameter routing between nodes."
+            },
+            {
+              "question": "Which node controls policy, bandwidth and quota?",
+              "options": [
+                "FW",
+                "CBS",
+                "UPCF",
+                "CG"
+              ],
+              "answer": 2,
+              "explain": "UPCF does the PCRF function."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "imsi",
+      "title": "Subscriber Identification: IMSI",
+      "icon": "🔢",
+      "category": "Getting Started",
+      "minutes": 3,
+      "reviewed": "2026-08-01",
+      "subtitle": "How the EPC identifies a subscriber.",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "The International Mobile Subscriber Identity (IMSI) is a 15-digit number the EPC uses to identify a subscriber. It can change during a SIM swap, but the MSISDN (phone number) stays the same."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Structure"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Segment",
+            "Length",
+            "TNM Value"
+          ],
+          "rows": [
+            [
+              "MCC: Mobile Country Code",
+              "3 digits",
+              "650 (Malawi)"
+            ],
+            [
+              "MNC: Mobile Network Code",
+              "2 digits",
+              "01 for TNM (Airtel uses 10)"
+            ],
+            [
+              "MSIN: Mobile Subscriber ID Number",
+              "10 digits",
+              "Starts with 01; last 8 digits come from the physical SIM"
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "variant": "info",
+          "title": "Reading an IMSI",
+          "text": "650 01 0114416xx  →  Malawi / TNM / subscriber 0114416xx. The last 8 digits are printed on the card."
+        },
+        {
+          "type": "checklist",
+          "id": "imsi-uses",
+          "title": "Where the IMSI is used",
+          "items": [
+            "Attach Request (initial UE identity)",
+            "Authentication vectors on HSS",
+            "Routing behind MS config on CGW",
+            "Subscriber profile lookups in HSS",
+            "All session contexts on USN and UGW",
+            "Traces across S1-MME, S6a, S11, S5/S8, Gx, Gy"
+          ]
+        },
+        {
+          "type": "callout",
+          "variant": "warning",
+          "title": "SIM swap",
+          "text": "When a customer does a SIM swap, the IMSI changes but the MSISDN stays the same. Update static routes on the CGW and any HSS profile entries."
+        },
+        {
+          "type": "quiz",
+          "title": "Quick check",
+          "items": [
+            {
+              "question": "How many digits does an IMSI have?",
+              "options": [
+                "10",
+                "12",
+                "15",
+                "16"
+              ],
+              "answer": 2,
+              "explain": "It is a 15-digit number: MCC (3) + MNC (2) + MSIN (10)."
+            },
+            {
+              "question": "In a TNM IMSI such as 650 01 0114416xx, which part identifies the country?",
+              "options": [
+                "650, the MCC",
+                "01, the MNC",
+                "0114416xx, the MSIN"
+              ],
+              "answer": 0,
+              "explain": "650 is the Mobile Country Code for Malawi."
+            },
+            {
+              "question": "A customer does a SIM swap. What happens?",
+              "options": [
+                "The IMSI changes and the MSISDN stays the same",
+                "The MSISDN changes and the IMSI stays the same",
+                "Both change",
+                "Neither changes"
+              ],
+              "answer": 0,
+              "explain": "Update static routes on the CGW and any HSS profile entries."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "protocols",
+      "title": "Key Protocols: GTP & Diameter",
+      "icon": "🔗",
+      "category": "Getting Started",
+      "minutes": 8,
+      "reviewed": "2026-08-01",
+      "subtitle": "The two protocol families that do most of the work.",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Two protocols do almost all the signalling and traffic work in the PS Core: GTP (tunnels subscriber data and mobility signalling) and Diameter (carries authentication, policy, and charging between USN, HSS, UPCF, and CBS via the DRA)."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "3.1  GTP: GPRS Tunnelling Protocol"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Variant",
+            "Purpose",
+            "Interfaces"
+          ],
+          "rows": [
+            [
+              "GTP-C",
+              "Control plane: creates / updates / deletes PDP contexts and EPS bearers, handles handovers",
+              "Gn (2G/3G), S11 (4G)"
+            ],
+            [
+              "GTP-U",
+              "User plane: carries the subscriber's actual IP traffic once a session is established",
+              "S1-U, S5/S8, Iu-PS"
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "variant": "info",
+          "title": "Why split GTP-C and GTP-U?",
+          "text": "Separating control from user plane lets CGW and DGW scale independently."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "3.2  Diameter Protocol"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Interface",
+            "Between",
+            "Purpose"
+          ],
+          "rows": [
+            [
+              "S6a",
+              "USN ↔ HSS (via DRA)",
+              "Fetch and update subscriber profile during attach and mobility events"
+            ],
+            [
+              "Gx",
+              "UGW ↔ UPCF (via DRA)",
+              "Install and enforce Policy and Charging Control (PCC) rules"
+            ],
+            [
+              "Gy",
+              "UGW ↔ CBS/OCS (via DRA)",
+              "Real-time credit control for prepaid"
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "variant": "info",
+          "title": "TNM Realm",
+          "text": "epc.mnc650.mcc001.3gppnetwork.org is routed via the LMB and LLG DRAs, with master/slave failover."
+        },
+        {
+          "type": "quiz",
+          "title": "Quick check",
+          "items": [
+            {
+              "question": "Which GTP variant carries the subscriber's actual IP traffic?",
+              "options": [
+                "GTP-U",
+                "Gx",
+                "GTP-C"
+              ],
+              "answer": 0,
+              "explain": "GTP-U is the user plane. GTP-C is the control plane."
+            },
+            {
+              "question": "Which Diameter interface sits between the USN and the HSS?",
+              "options": [
+                "S11",
+                "Gx",
+                "S6a",
+                "Gy"
+              ],
+              "answer": 2,
+              "explain": "S6a fetches and updates the subscriber profile during attach and mobility events."
+            },
+            {
+              "question": "Which interface lets the UGW get policy (PCC) rules from the UPCF?",
+              "options": [
+                "Gy",
+                "S6a",
+                "Gx"
+              ],
+              "answer": 2,
+              "explain": "Gx installs and enforces Policy and Charging Control rules."
+            },
+            {
+              "question": "Why are GTP-C and GTP-U kept separate?",
+              "options": [
+                "So the HSS can authenticate faster",
+                "So the CGW and DGW can scale independently",
+                "So Diameter can carry charging"
+              ],
+              "answer": 1,
+              "explain": "Separating control from user plane lets them scale independently."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "attach-pdp",
+      "title": "Attach & PDP Session Establishment",
+      "icon": "📶",
+      "category": "Procedures",
+      "minutes": 15,
+      "reviewed": "2026-08-01",
+      "subtitle": "How a subscriber gets on the network and gets a data session.",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "LTE Attach Procedure (4G)"
+        },
+        {
+          "type": "image",
+          "file": "attach-flow.png",
+          "caption": "LTE Attach flow: UE, eNodeB, USN (MME/SGW), UGW (PGW), HSS, UPCF"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Step",
+            "Message",
+            "Function"
+          ],
+          "rows": [
+            [
+              "1-2",
+              "Attach Request",
+              "UE sends IMSI to eNodeB, forwarded to USN (MME) over S1-AP"
+            ],
+            [
+              "3",
+              "Authentication / NAS security",
+              "USN authenticates with HSS credentials"
+            ],
+            [
+              "4-5",
+              "Update Location (S6a)",
+              "USN registers location with HSS; HSS returns profile"
+            ],
+            [
+              "6-7",
+              "Create Session Request (S11 / S5-S8)",
+              "USN instructs UGW (SGW) to create session"
+            ],
+            [
+              "8",
+              "IP-CAN Session Establishment (Gx)",
+              "UGW (PGW) requests policy/QoS from UPCF"
+            ],
+            [
+              "9-10",
+              "Create Session Response",
+              "UGW (PGW) allocates IP, returns via SGW to USN"
+            ],
+            [
+              "11-12",
+              "Attach Accept / RRC Reconfiguration",
+              "USN sends Attach Accept to eNodeB"
+            ],
+            [
+              "13-14",
+              "Attach Complete",
+              "UE confirms attach; eNodeB relays to USN"
+            ],
+            [
+              "15-16",
+              "Modify Bearer Request/Response",
+              "USN confirms eNodeB tunnel endpoint to UGW"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "PDP Context Activation (2G/3G)"
+        },
+        {
+          "type": "image",
+          "file": "pdp-flow.png",
+          "caption": "PDP Context Activation: UE, USN (SGSN), HSS, UGW (GGSN), UPCF, CBS"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Step",
+            "Message",
+            "Function"
+          ],
+          "rows": [
+            [
+              "1",
+              "Activate PDP Context Request",
+              "UE requests activation with APN, QoS, NSAPI"
+            ],
+            [
+              "2",
+              "Authentication / Security Check",
+              "USN (SGSN) verifies credentials against HSS (HLR)"
+            ],
+            [
+              "3",
+              "Create PDP Context Request (GTP-C)",
+              "USN (SGSN) requests PDP context from UGW (GGSN)"
+            ],
+            [
+              "4-5",
+              "Policy and QoS rules (Gx)",
+              "UGW (GGSN) requests PCC rules from UPCF"
+            ],
+            [
+              "6-7",
+              "Charging authorization (Gy)",
+              "UGW (GGSN) requests credit from CBS (OCS)"
+            ],
+            [
+              "8",
+              "Create PDP Context Response",
+              "UGW (GGSN) allocates IP, returns to USN (SGSN)"
+            ],
+            [
+              "9",
+              "Activate PDP Context Accept",
+              "USN (SGSN) confirms activation to UE"
+            ]
+          ]
+        },
+        {
+          "type": "quiz",
+          "title": "Quick check",
+          "items": [
+            {
+              "question": "In an LTE attach, which message registers the subscriber's location with the HSS?",
+              "options": [
+                "Modify Bearer Request",
+                "Create Session Request",
+                "Attach Complete",
+                "Update Location (S6a)"
+              ],
+              "answer": 3,
+              "explain": "The USN registers location with the HSS, and the HSS returns the profile."
+            },
+            {
+              "question": "In an LTE attach, which node allocates the IP address?",
+              "options": [
+                "USN",
+                "HSS",
+                "UGW (PGW)",
+                "UPCF"
+              ],
+              "answer": 2,
+              "explain": "The UGW (PGW) allocates the IP and returns it via the SGW to the USN."
+            },
+            {
+              "question": "In a 2G/3G PDP context activation, which interface does the UGW (GGSN) use to request credit from the CBS?",
+              "options": [
+                "Gx",
+                "Gy",
+                "S6a",
+                "S11"
+              ],
+              "answer": 1,
+              "explain": "Gy is the charging authorization step."
+            }
+          ]
+        },
+        {
+          "type": "link",
+          "target": "troubleshooting",
+          "label": "Subscriber failing to attach or browse? Open Troubleshooting"
+        }
+      ]
+    },
+    {
+      "id": "static-routing",
+      "title": "Static Routing on CGW",
+      "icon": "🔀",
+      "category": "Procedures",
+      "minutes": 5,
+      "reviewed": "2026-08-01",
+      "subtitle": "Link a subscriber's IMSI + local IP to a public IP.",
+      "blocks": [
+        {
+          "type": "callout",
+          "variant": "warning",
+          "title": "Workspace",
+          "text": "When adding a route, ensure you are working in the Omo workspace."
+        },
+        {
+          "type": "command",
+          "title": "List existing configurations",
+          "language": "mml",
+          "code": "LST ROUTINGBEHINDMS;"
+        },
+        {
+          "type": "image",
+          "file": "route-lst.png",
+          "caption": "LST ROUTINGBEHINDMS output"
+        },
+        {
+          "type": "command",
+          "title": "Add the route",
+          "language": "mml",
+          "code": "ADD ROUTINGBEHINDMS: IMSI=\"650010114416xx\", APN=\"apnX\",\n    FRAMEDROUTEIP=\"100.64.xx.xx\", FRAMEDROUTEMASK=\"255.255.255.252\";"
+        },
+        {
+          "type": "image",
+          "file": "route-add.png",
+          "caption": "ADD ROUTINGBEHINDMS command form"
+        },
+        {
+          "type": "callout",
+          "variant": "warning",
+          "title": "No MOD command",
+          "text": "After a SIM swap, remove the old route and add a new one with the updated IMSI."
+        },
+        {
+          "type": "command",
+          "title": "Remove old route",
+          "language": "mml",
+          "code": "RMV ROUTINGBEHINDMS: IMSI=\"6500101xxxx\", APN=\"apnx\",\n    FRAMEDROUTEIP=\"100.72.xx.xx\", FRAMEDROUTEMASK=\"255.255.255.252\";"
+        },
+        {
+          "type": "image",
+          "file": "route-rmv.png",
+          "caption": "RMV ROUTINGBEHINDMS command form"
+        },
+        {
+          "type": "checklist",
+          "id": "static-route-check",
+          "title": "Static Route Checklist",
+          "items": [
+            "Workspace = Omo",
+            "LST ROUTINGBEHINDMS run before change",
+            "Route added with correct IMSI, APN, IP, mask",
+            "LST ROUTINGBEHINDMS run after change",
+            "Public IP ping successful",
+            "Evidence captured (masked)"
+          ]
+        },
+        {
+          "type": "quiz",
+          "title": "Quick check",
+          "items": [
+            {
+              "question": "Which workspace must you be in when adding a route?",
+              "options": [
+                "Maintenance",
+                "Production",
+                "Default",
+                "Omo"
+              ],
+              "answer": 3,
+              "explain": "Check the workspace before you add the route."
+            },
+            {
+              "question": "A customer swaps their SIM. How do you update the static route?",
+              "options": [
+                "Remove the old route and add a new one with the new IMSI",
+                "Run MOD ROUTINGBEHINDMS",
+                "Do nothing; routes follow the SIM"
+              ],
+              "answer": 0,
+              "explain": "There is no MOD command for this."
+            },
+            {
+              "question": "Which command lists the existing static routes?",
+              "options": [
+                "RMV ROUTINGBEHINDMS",
+                "LST ROUTINGBEHINDMS",
+                "ADD ROUTINGBEHINDMS"
+              ],
+              "answer": 1,
+              "explain": "Run it before and after the change."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "apn",
+      "title": "APN Provisioning",
+      "icon": "📡",
+      "category": "Procedures",
+      "minutes": 15,
+      "reviewed": "2026-08-01",
+      "subtitle": "Configure an APN end-to-end across HSS, USN, and UGW.",
+      "blocks": [
+        {
+          "type": "command",
+          "title": "List APN templates (HLRSN = 1)",
+          "language": "mml",
+          "code": "LST APNTPL: HLRSN=1;"
+        },
+        {
+          "type": "image",
+          "file": "apn-list.png",
+          "caption": "LST APNTPL output: available APN templates"
+        },
+        {
+          "type": "command",
+          "title": "1. Check existing services",
+          "language": "mml",
+          "code": "LST OPTGPRS;"
+        },
+        {
+          "type": "command",
+          "title": "2. Add the APN",
+          "language": "mml",
+          "code": "MOD OPTGPRS;   // use ADDPDPCTX"
+        },
+        {
+          "type": "command",
+          "title": "3. Verify",
+          "language": "mml",
+          "code": "LST OPTGPRS;"
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Node",
+            "Responsibility",
+            "Commands"
+          ],
+          "rows": [
+            [
+              "HSS",
+              "Add APN to allowed list",
+              "ADD APNTL"
+            ],
+            [
+              "USN",
+              "Resolve APN to UGW via host files",
+              "ADD IPV4DNSH, ADD DNSN"
+            ],
+            [
+              "UGW",
+              "IP pool, policy, charging, NAT",
+              "ADD APN, SET APN*, ADD POOL, ADD POOLBINDAPN"
+            ]
+          ]
+        },
+        {
+          "type": "checklist",
+          "id": "apn-check",
+          "title": "APN Provisioning Checklist",
+          "items": [
+            "Change ticket approved",
+            "HSS: ADD APNTL executed; LST APNTPL verified",
+            "USN: ADD IPV4DNSH + ADD DNSN executed; LST DNSN verified",
+            "UGW: ADD APN + SET APN* executed",
+            "IP pool created and bound",
+            "Test attach with test IMSI successful",
+            "Evidence captured (masked)"
+          ]
+        },
+        {
+          "type": "quiz",
+          "title": "Quick check",
+          "items": [
+            {
+              "question": "Which node adds the APN to the allowed list?",
+              "options": [
+                "USN",
+                "HSS",
+                "UGW"
+              ],
+              "answer": 1,
+              "explain": "HSS: ADD APNTL."
+            },
+            {
+              "question": "Which node resolves the APN to the UGW using host files?",
+              "options": [
+                "USN",
+                "UGW",
+                "HSS"
+              ],
+              "answer": 0,
+              "explain": "USN: ADD IPV4DNSH and ADD DNSN."
+            },
+            {
+              "question": "Which node owns the IP pool, policy, charging and NAT for the APN?",
+              "options": [
+                "UGW",
+                "HSS",
+                "USN"
+              ],
+              "answer": 0,
+              "explain": "UGW: ADD APN, SET APN*, ADD POOL, ADD POOLBINDAPN."
+            },
+            {
+              "question": "What must be approved before you provision an APN?",
+              "options": [
+                "A screenshot",
+                "The subscriber's phone model",
+                "A change ticket"
+              ],
+              "answer": 2,
+              "explain": "It is the first item on the APN checklist."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "roaming",
+      "title": "Roaming (LTE / GSM / GPRS)",
+      "icon": "🌍",
+      "category": "Procedures",
+      "minutes": 25,
+      "reviewed": "2026-08-01",
+      "subtitle": "Enable and verify inbound / outbound roaming.",
+      "blocks": [
+        {
+          "type": "image",
+          "file": "lte-roaming-diagram.png",
+          "caption": "Inbound LTE Roaming: USN & DRA signalling and user-plane path"
+        },
+        {
+          "type": "command",
+          "title": "Enable LTE Roaming (PROV=FALSE)",
+          "language": "mml",
+          "code": "MOD PLMNRSZI: ISDN=\"26588xxxx\", PROV=FALSE;"
+        },
+        {
+          "type": "image",
+          "file": "mod-plmnrszi-false.png",
+          "caption": "MOD PLMNRSZI with PROV=FALSE: enables roaming"
+        },
+        {
+          "type": "command",
+          "title": "Disable LTE Roaming (PROV=TRUE)",
+          "language": "mml",
+          "code": "MOD PLMNRSZI: ISDN=\"26588xxxx\", PROV=TRUE;"
+        },
+        {
+          "type": "image",
+          "file": "mod-plmnrszi-true.png",
+          "caption": "MOD PLMNRSZI with PROV=TRUE: withdraws the roaming template"
+        },
+        {
+          "type": "command",
+          "title": "GSM: verify IMSI prefix on both MSC nodes",
+          "language": "mml",
+          "code": "LST IMSIGT;"
+        },
+        {
+          "type": "command",
+          "title": "CAMEL: verify prefix on both MSC nodes",
+          "language": "mml",
+          "code": "LST IMSIGT: MCCMNC=K'302720;"
+        },
+        {
+          "type": "command",
+          "title": "GPRS: verify prefix on USN",
+          "language": "mml",
+          "code": "LST IMSIGT: IMSIPRE=\"42402\";"
+        },
+        {
+          "type": "command",
+          "title": "LTE: add Diameter route",
+          "language": "mml",
+          "code": "ADD DMRT: ROUTEIDX=53, ISDEFAULT=NO, RSELMODE=SELMODE_MASTER_SLAVE, REALMNAME=\"epc.mnc004.mcc204.3gppnetwork.org\", PEERIDX=6, ROUTENAM=\"NLDLT\", PRIORITY=1;"
+        },
+        {
+          "type": "callout",
+          "variant": "info",
+          "title": "DRA priorities",
+          "text": "LLG USN: LLG DRA highest (PEERIDX 7, Priority 0). LMB USN: LMB DRA highest (PEERIDX 6, Priority 0)."
+        },
+        {
+          "type": "checklist",
+          "id": "roaming-checklist",
+          "title": "LTE Roaming Configuration Checklist",
+          "items": [
+            "IR.21 obtained from roaming partner",
+            "EPC realm name identified",
+            "LST DMRT checked for partner",
+            "LST IMSIHSS verified",
+            "LST S1ARD verified",
+            "ADD DMRT executed (correct PEERIDX, PRIORITY)",
+            "ADD DMRTGRP executed",
+            "ADD IMSIHSS executed",
+            "ADD S1ARD with CTRLTYPE=ALLOW executed",
+            "Test call tracing confirms ULR → HSS and ULA returned"
+          ]
+        },
+        {
+          "type": "quiz",
+          "title": "Quick check",
+          "items": [
+            {
+              "question": "To enable LTE roaming with MOD PLMNRSZI, what do you set PROV to?",
+              "options": [
+                "TRUE",
+                "FALSE"
+              ],
+              "answer": 1,
+              "explain": "PROV=FALSE enables roaming; PROV=TRUE disables it."
+            },
+            {
+              "question": "What do you need from the roaming partner before you start?",
+              "options": [
+                "The IR.21",
+                "Their subscriber list",
+                "Their IMSI range only"
+              ],
+              "answer": 0,
+              "explain": "It is the first item on the roaming checklist."
+            },
+            {
+              "question": "At the LLG USN, which DRA has the highest priority?",
+              "options": [
+                "The LMB DRA",
+                "The LLG DRA",
+                "Both are equal"
+              ],
+              "answer": 1,
+              "explain": "LLG USN: LLG DRA highest (PEERIDX 7, Priority 0)."
+            },
+            {
+              "question": "Which command verifies the GPRS IMSI prefix on the USN?",
+              "options": [
+                "LST S1ARD",
+                "LST IMSIGT",
+                "LST DMRT"
+              ],
+              "answer": 1,
+              "explain": "LST IMSIGT with IMSIPRE."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kpi-alarms",
+      "title": "KPIs & Alarms",
+      "icon": "📊",
+      "category": "Operations",
+      "minutes": 15,
+      "reviewed": "2026-08-01",
+      "subtitle": "Monitor health via alarms and KPIs.",
+      "blocks": [
+        {
+          "type": "image",
+          "file": "u2020-workspace.png",
+          "caption": "U2020 workspace: main entry points"
+        },
+        {
+          "type": "image",
+          "file": "alarm-list.png",
+          "caption": "Alarm/Event list: severity, category, type, and affected node"
+        },
+        {
+          "type": "callout",
+          "variant": "warning",
+          "title": "Common USN alarm: S1AP Link Down",
+          "text": "Indicates the connection between the eNodeB and the USN is down. The eNodeB name identifies the affected site. Coordinate with the RAN team."
+        },
+        {
+          "type": "image",
+          "file": "alarm-detail.png",
+          "caption": "Detailed Information popup: full alarm context"
+        },
+        {
+          "type": "image",
+          "file": "alarm-template.png",
+          "caption": "Alarm Template view with sorting and filtering"
+        },
+        {
+          "type": "image",
+          "file": "kpi-graph.png",
+          "caption": "3G PDP Cloud: success rate vs. reject timeline"
+        },
+        {
+          "type": "image",
+          "file": "trace-view.png",
+          "caption": "Trace Data: S1-MME and S6a messages during an attach"
+        },
+        {
+          "type": "checklist",
+          "id": "alarm-checklist",
+          "title": "Alarm Review Checklist",
+          "items": [
+            "Check active alarms on USN, UGW, HSS",
+            "Check alarm severity",
+            "Check occurrence time",
+            "Read alarm description and probable cause",
+            "Check recommended corrective action",
+            "Correlate alarms with KPI changes"
+          ]
+        },
+        {
+          "type": "quiz",
+          "title": "Quick check",
+          "items": [
+            {
+              "question": "What does an S1AP Link Down alarm indicate?",
+              "options": [
+                "The HSS database is full",
+                "A license has expired",
+                "The connection between the eNodeB and the USN is down"
+              ],
+              "answer": 2,
+              "explain": "The eNodeB name identifies the affected site."
+            },
+            {
+              "question": "Who do you coordinate with on an S1AP Link Down alarm?",
+              "options": [
+                "The RAN team",
+                "The Planning Team",
+                "The roaming partner"
+              ],
+              "answer": 0,
+              "explain": "Coordinate with the RAN team."
+            },
+            {
+              "question": "How do you find which site is affected by S1AP Link Down?",
+              "options": [
+                "By the UGW pool name",
+                "By the subscriber's IMSI",
+                "By the eNodeB name"
+              ],
+              "answer": 2,
+              "explain": "The eNodeB name identifies the affected site."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chr-download",
+      "title": "Downloading CHR (Call History Record)",
+      "icon": "📥",
+      "category": "Operations",
+      "minutes": 12,
+      "reviewed": "2026-08-01",
+      "subtitle": "Collect session/call records from PS Core nodes via U2020.",
+      "blocks": [
+        {
+          "type": "callout",
+          "variant": "info",
+          "title": "When to use",
+          "text": "Huawei may request a CHR when additional session or call-related information is needed to investigate an issue."
+        },
+        {
+          "type": "image",
+          "file": "chr-wizard-01-home.png",
+          "caption": "Network Information Collection: Task Creation tiles"
+        },
+        {
+          "type": "image",
+          "file": "chr-wizard-02-props.png",
+          "caption": "Task Property Settings: Product Type [CloudEdge], NE Version [VUSN]"
+        },
+        {
+          "type": "image",
+          "file": "chr-wizard-03-nes.png",
+          "caption": "NEs Selection: CLOUDUSN and LMB_vUSN01 selected"
+        },
+        {
+          "type": "image",
+          "file": "chr-wizard-04-items.png",
+          "caption": "Collection Items: filtered by 'CHR'"
+        },
+        {
+          "type": "image",
+          "file": "chr-wizard-05-params.png",
+          "caption": "Detailed Parameters: batch collection start and end time"
+        },
+        {
+          "type": "image",
+          "file": "chr-wizard-06-task.png",
+          "caption": "Task Settings: Instant execution, 7-day retention"
+        },
+        {
+          "type": "image",
+          "file": "chr-wizard-07-overview.png",
+          "caption": "Task Overview: verify before creating"
+        },
+        {
+          "type": "image",
+          "file": "chr-wizard-08-progress.png",
+          "caption": "Task View: download when Progress = 100% and Status = Idle"
+        },
+        {
+          "type": "callout",
+          "variant": "success",
+          "title": "Provide to Huawei",
+          "text": "Attach the downloaded CHR file to the Huawei SR as evidence."
+        },
+        {
+          "type": "checklist",
+          "id": "chr-checklist",
+          "title": "CHR Download Checklist",
+          "items": [
+            "Logged in to U2020",
+            "Selected Maintenance → Network Information Collection",
+            "Chose Customized Collection",
+            "Set Product Type = CloudEdge, NE Version = VUSN",
+            "Selected the correct NE(s)",
+            "Filtered to CHR items and added them",
+            "Set the batch collection time range",
+            "Confirmed Task Overview and clicked Finish",
+            "Waited for Progress = 100%, Status = Idle",
+            "Downloaded and saved the CHR file"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hc-download",
+      "title": "Downloading HC (Health Check)",
+      "icon": "📥",
+      "category": "Operations",
+      "minutes": 15,
+      "reviewed": "2026-08-01",
+      "subtitle": "Collect health and operational data from PS Core nodes via U2020.",
+      "blocks": [
+        {
+          "type": "callout",
+          "variant": "info",
+          "title": "When to use",
+          "text": "Huawei may request a Health Check (HC) to obtain health and operational information from the relevant PS Core network elements."
+        },
+        {
+          "type": "image",
+          "file": "hc-wizard-01-menu.png",
+          "caption": "Create Task → Based on Scenario"
+        },
+        {
+          "type": "image",
+          "file": "hc-wizard-02-scenario.png",
+          "caption": "Scenario Task Creation Wizard: Health Check selected"
+        },
+        {
+          "type": "callout",
+          "variant": "warning",
+          "title": "Limit",
+          "text": "Tip shown in the wizard: only 5 NEs can be selected per HC task."
+        },
+        {
+          "type": "image",
+          "file": "hc-wizard-03-nes.png",
+          "caption": "NEs Selection: selected nodes appear on the right"
+        },
+        {
+          "type": "image",
+          "file": "hc-wizard-04-params.png",
+          "caption": "Detailed Parameters: batch collection time range"
+        },
+        {
+          "type": "image",
+          "file": "hc-wizard-05-task.png",
+          "caption": "Task Settings: Instant execution and retention"
+        },
+        {
+          "type": "image",
+          "file": "hc-wizard-06-overview.png",
+          "caption": "Task Overview: 6 pre-configured scenario names"
+        },
+        {
+          "type": "image",
+          "file": "hc-wizard-07-progress.png",
+          "caption": "Task View: download when Progress = 100%"
+        },
+        {
+          "type": "callout",
+          "variant": "success",
+          "title": "Provide to Huawei",
+          "text": "Attach the downloaded HC file to the Huawei SR."
+        },
+        {
+          "type": "checklist",
+          "id": "hc-checklist",
+          "title": "HC Download Checklist",
+          "items": [
+            "Logged in to U2020",
+            "Selected Maintenance → Network Information Collection",
+            "Clicked Create Task → Based on Scenario",
+            "Set Product Type = CloudEdge, NE Version = VUSN",
+            "Chose the Health Check scenario",
+            "Selected up to 5 NEs",
+            "Set the batch collection time range",
+            "Confirmed Task Overview and clicked Finish",
+            "Waited for Progress = 100%, Status = Idle",
+            "Downloaded and saved the HC file"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "license",
+      "title": "License Management",
+      "icon": "🔑",
+      "category": "Operations",
+      "minutes": 15,
+      "reviewed": "2026-08-01",
+      "subtitle": "Validate, upload, activate, and verify licenses.",
+      "blocks": [
+        {
+          "type": "image",
+          "file": "license-excel.png",
+          "caption": "BPart sheet: Resource Name, Total Resource, New Licence, Difference"
+        },
+        {
+          "type": "command",
+          "title": "Compare current license values",
+          "language": "mml",
+          "code": "DSP LICENSERES;"
+        },
+        {
+          "type": "image",
+          "file": "dsp-licenseres.png",
+          "caption": "DSP LICENSERES: Total Resource, Used Resource, Usage %"
+        },
+        {
+          "type": "command",
+          "title": "List licenses and active status",
+          "language": "mml",
+          "code": "LST LICENSE;"
+        },
+        {
+          "type": "image",
+          "file": "lst-license.png",
+          "caption": "LST LICENSE: active license marked 'Y', status 'Normal'"
+        },
+        {
+          "type": "command",
+          "title": "Activate license (mode 1, load in VNFP)",
+          "language": "mml",
+          "code": "ACT LICENSE"
+        },
+        {
+          "type": "checklist",
+          "id": "license-procedure",
+          "title": "License Change Checklist",
+          "items": [
+            "Compare current license values (DSP LICENSERES)",
+            "Use license comparison template: check BPart sheet",
+            "List licenses used and currently active (LST LICENSE)",
+            "Sync license via U2020 Transfer NE",
+            "Confirm new license uploaded (not yet active)",
+            "Activate with ACT LICENSE (mode 1, VNFP)",
+            "Verify with LST LICENSE + DSP LICENSERES",
+            "Compare resource usage before vs after"
+          ]
+        },
+        {
+          "type": "quiz",
+          "title": "Quick check",
+          "items": [
+            {
+              "question": "Which command compares the current license resource values?",
+              "options": [
+                "LST LICENSE",
+                "DSP LICENSERES",
+                "ACT LICENSE"
+              ],
+              "answer": 1,
+              "explain": "Compare before and after the change."
+            },
+            {
+              "question": "A new license is uploaded but not yet active. Which command activates it?",
+              "options": [
+                "DSP LICENSERES",
+                "LST LICENSE",
+                "ACT LICENSE"
+              ],
+              "answer": 2,
+              "explain": "Activate with ACT LICENSE (mode 1, VNFP)."
+            },
+            {
+              "question": "Which commands verify the result after activating?",
+              "options": [
+                "LST SECTION",
+                "LST OPTGPRS",
+                "LST LICENSE and DSP LICENSERES"
+              ],
+              "answer": 2,
+              "explain": "Then compare resource usage before and after."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pool-usage",
+      "title": "Pool Usage Group Management",
+      "icon": "💧",
+      "category": "Operations",
+      "minutes": 20,
+      "reviewed": "2026-08-01",
+      "subtitle": "Monitor and expand IP pools.",
+      "blocks": [
+        {
+          "type": "command",
+          "title": "List segments under a pool",
+          "language": "mml",
+          "code": "LST SECTION: POOLNAME=\"poolspx\";"
+        },
+        {
+          "type": "image",
+          "file": "lst-section-input.png",
+          "caption": "Entering Pool Name to list existing segments"
+        },
+        {
+          "type": "image",
+          "file": "lst-section-output.png",
+          "caption": "LST SECTION output: Start IPv4 Address, End IPv4 Address per segment"
+        },
+        {
+          "type": "command",
+          "title": "Add new /24 to the pool",
+          "language": "mml",
+          "code": "ADD SECTION: POOLNAME=\"pool1\", SECTIONNUM=0, IPVERSION=IPV4, V4STARTIP=\"10.1.1.0\", V4ENDIP=\"10.1.1.200\";"
+        },
+        {
+          "type": "command",
+          "title": "Lock the added segment",
+          "language": "mml",
+          "code": "LCK SECTION;"
+        },
+        {
+          "type": "image",
+          "file": "lst-section-lock.png",
+          "caption": "LST SECTION with Lock Section = LOCK on the new segment"
+        },
+        {
+          "type": "command",
+          "title": "Check pool utilization",
+          "language": "mml",
+          "code": "DSP POOLUSAGE: POOLNAME=\"pool1\";"
+        },
+        {
+          "type": "checklist",
+          "id": "pool-expansion",
+          "title": "Pool Expansion Checklist",
+          "items": [
+            "Check existing IP blocks (LST SECTION)",
+            "Request new /24 from Planning Team",
+            "Add the new IP block (ADD SECTION)",
+            "Verify the configuration (LST SECTION)",
+            "Lock new segment (LCK SECTION) until whitelisted",
+            "Confirm IP whitelisting complete",
+            "Unlock the segment for testing",
+            "Confirm customers can use new addresses",
+            "Monitor pool usage (DSP POOLUSAGE)"
+          ]
+        },
+        {
+          "type": "quiz",
+          "title": "Quick check",
+          "items": [
+            {
+              "question": "A new /24 was added to the pool. What do you do with the segment before customers use it?",
+              "options": [
+                "Delete it after testing",
+                "Leave it unlocked straight away",
+                "Lock it (LCK SECTION) until whitelisting is done"
+              ],
+              "answer": 2,
+              "explain": "Unlock it for testing only after the whitelisting is confirmed."
+            },
+            {
+              "question": "Who do you request a new /24 from?",
+              "options": [
+                "The RAN team",
+                "The roaming partner",
+                "The Planning Team"
+              ],
+              "answer": 2,
+              "explain": "Request it before you add the block."
+            },
+            {
+              "question": "Which command checks pool utilization?",
+              "options": [
+                "ADD SECTION",
+                "LST SECTION",
+                "DSP POOLUSAGE"
+              ],
+              "answer": 2,
+              "explain": "Monitor pool usage after the change."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "troubleshooting",
+      "title": "Troubleshooting: Subscriber Issues",
+      "icon": "🛠",
+      "category": "Troubleshooting",
+      "minutes": 20,
+      "reviewed": "2026-08-15",
+      "subtitle": "Pick a problem, then follow the steps.",
+      "blocks": [
+        {
+          "type": "troubleshooting_manager"
+        }
+      ]
+    },
+    {
+      "id": "error-codes",
+      "title": "Error Code Lookup",
+      "icon": "🔍",
+      "category": "Troubleshooting",
+      "minutes": 2,
+      "subtitle": "Add, edit, and search common error codes. Data saves automatically.",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Common MML return codes and CCA result codes you will see on the PS Core. Search by code, meaning or action."
+        },
+        {
+          "type": "error_lookup"
+        }
+      ]
+    },
+    {
+      "id": "huawei-ticket",
+      "title": "Opening a Huawei Ticket",
+      "icon": "🎫",
+      "category": "Support",
+      "minutes": 10,
+      "reviewed": "2026-08-01",
+      "subtitle": "Prepare and submit an SR with all required evidence.",
+      "blocks": [
+        {
+          "type": "image",
+          "file": "excel-ticket.png",
+          "caption": "Excel template: Customer Information and Ticket Information sections"
+        },
+        {
+          "type": "image",
+          "file": "outlook-ticket.png",
+          "caption": "Email draft with the ticket attached"
+        },
+        {
+          "type": "checklist",
+          "id": "huawei-sr-check",
+          "title": "Before Opening an SR",
+          "items": [
+            "Problem description written",
+            "Affected node / site identified",
+            "Affected subscriber(s) recorded",
+            "Time of occurrence captured",
+            "Alarm information collected",
+            "KPI observations noted",
+            "Troubleshooting steps documented",
+            "Relevant traces captured",
+            "CHR downloaded",
+            "Health Check (HC) downloaded",
+            "Screenshots / logs saved",
+            "Impact of the issue assessed"
+          ]
+        },
+        {
+          "type": "image",
+          "file": "u2020-collection.png",
+          "caption": "U2020 Network Information Collection: start a task from here"
+        },
+        {
+          "type": "link",
+          "target": "chr-download",
+          "label": "How to download a CHR"
+        },
+        {
+          "type": "link",
+          "target": "hc-download",
+          "label": "How to download an HC"
+        }
+      ]
+    },
+    {
+      "id": "screenshot-library",
+      "title": "Screenshot Library",
+      "icon": "🖼",
+      "category": "Appendices",
+      "minutes": 2,
+      "subtitle": "Every image currently in the screenshots folder.",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "This page lists the files in the screenshots folder. Type part of a filename to narrow the list; if only one file matches, it opens full size. If an image is not showing up in a module, check its filename here."
+        },
+        {
+          "type": "screenshot_library"
+        }
+      ]
+    },
+    {
+      "id": "team-activity",
+      "title": "Team Activity",
+      "icon": "👥",
+      "category": "Appendices",
+      "minutes": 2,
+      "subtitle": "What every operator has done on this machine.",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Every operator's session log is merged here, newest first (the last 200 entries), so you can see what the previous shift did on the same nodes. IMSI and MSISDN are masked in saved logs by default."
+        },
+        {
+          "type": "callout",
+          "variant": "info",
+          "title": "Where the data comes from",
+          "text": "Each operator's commands are written to the SQLite database in the app data folder. This page reads all of them."
+        },
+        {
+          "type": "team_activity"
+        }
+      ]
+    },
+    {
+      "id": "appendix-cmds",
+      "title": "Appendix: Common Commands",
+      "icon": "📋",
+      "category": "Appendices",
+      "minutes": 2,
+      "subtitle": "Quick reference for the most-used commands.",
+      "blocks": [
+        {
+          "type": "table",
+          "headers": [
+            "Node",
+            "Command",
+            "Purpose"
+          ],
+          "rows": [
+            [
+              "HSS",
+              "CHECK SUB",
+              "Subscriber information / provisioning"
+            ],
+            [
+              "HSS",
+              "LST OPTGPRS",
+              "GPRS-related subscriber configuration"
+            ],
+            [
+              "HSS",
+              "LST EPS",
+              "EPS / LTE subscriber configuration"
+            ],
+            [
+              "HSS",
+              "LST LCK",
+              "Subscriber lock / status information"
+            ],
+            [
+              "USN",
+              "DSP SMCTXT",
+              "Session context / current RAT"
+            ],
+            [
+              "USN",
+              "DSP MMCTXT",
+              "Mobility management context"
+            ],
+            [
+              "CGW",
+              "DSP CPPDPCTXT",
+              "Control plane PDP context"
+            ],
+            [
+              "DGW",
+              "DSP UPPDPCTXT",
+              "User plane PDP context"
+            ]
+          ]
+        },
+        {
+          "type": "callout",
+          "variant": "info",
+          "title": "Software-specific",
+          "text": "Exact command syntax and parameters should follow the commands applicable to the deployed Huawei platform version."
+        }
+      ]
+    },
+    {
+      "id": "appendix-incident",
+      "title": "Appendix: Incident Checklist",
+      "icon": "✅",
+      "category": "Appendices",
+      "minutes": 5,
+      "reviewed": "2026-08-01",
+      "subtitle": "Steps to work through during a PS Core investigation.",
+      "blocks": [
+        {
+          "type": "checklist",
+          "id": "incident-scope",
+          "title": "Determine the scope",
+          "items": [
+            "Is it everyone, a region, an APN, or one subscriber?",
+            "When did it start? (timestamp)",
+            "Is it still happening now?",
+            "What is the reported symptom?"
+          ]
+        },
+        {
+          "type": "checklist",
+          "id": "incident-subscriber",
+          "title": "Capture subscriber info",
+          "items": [
+            "Confirm the affected subscriber's IMSI and MSISDN",
+            "Confirm the APN they are trying to reach",
+            "Confirm the affected node (USN, UGW, HSS)",
+            "Record the exact time of occurrence"
+          ]
+        },
+        {
+          "type": "checklist",
+          "id": "incident-checks",
+          "title": "Node and profile checks",
+          "items": [
+            "Check subscriber provisioning in HSS (LST OPTGPRS, LST EPS, LST SUB)",
+            "Check subscriber lock status (LST LCK)",
+            "Check relevant PS Core node status (USN, UGW)",
+            "Check active alarms on USN, UGW, HSS",
+            "Check relevant KPIs on DataPlus / U2020",
+            "Check subscriber / session context (DSP SMCTXT, DSP CPPDPCTXT, DSP UPPDPCTXT)",
+            "Check APN configuration across HSS, USN, UGW",
+            "Remove the existing subscriber session where required",
+            "Enable / set the required trace",
+            "Require the subscriber to re-attach",
+            "Check the trace on the relevant PS Core nodes",
+            "Identify where the procedure fails or is rejected",
+            "Collect relevant evidence (traces, command outputs, screenshots)",
+            "Escalate to Huawei if required",
+            "Provide CHR / HC when requested by Huawei",
+            "Document the resolution"
+          ]
+        },
+        {
+          "type": "link",
+          "target": "troubleshooting",
+          "label": "Open the guided troubleshooting chain"
+        },
+        {
+          "type": "link",
+          "target": "huawei-ticket",
+          "label": "Prepare a Huawei Support Request"
+        }
+      ]
+    },
+    {
+      "id": "appendix-healthcheck",
+      "title": "Appendix: Health Check Reference",
+      "icon": "❤",
+      "category": "Appendices",
+      "minutes": 5,
+      "reviewed": "2026-08-01",
+      "subtitle": "What to check during routine PS Core health monitoring.",
+      "blocks": [
+        {
+          "type": "checklist",
+          "id": "hc-nodes",
+          "title": "PS Core nodes to check",
+          "items": [
+            "vUSN: Unified Serving Node",
+            "vCGW: Control Gateway",
+            "vDGW / vUGW: Data / User Gateway",
+            "HSS: Home Subscriber Server",
+            "U2020: Network Management System"
+          ]
+        },
+        {
+          "type": "checklist",
+          "id": "hc-alarms",
+          "title": "For every active alarm",
+          "items": [
+            "Check alarm severity (critical / major / minor)",
+            "Check occurrence time: ongoing or historical?",
+            "Read the alarm description and probable cause",
+            "Check the recommended corrective action",
+            "Correlate with KPI changes",
+            "If unfamiliar, notify colleagues and manager before escalating"
+          ]
+        },
+        {
+          "type": "callout",
+          "variant": "warning",
+          "title": "Common alarm",
+          "text": "S1AP Link Down on the USN means the eNodeB→USN connection is down. Coordinate with the RAN team."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Object",
+            "Monitoring purpose"
+          ],
+          "rows": [
+            [
+              "CPU VUGW",
+              "UGW CPU utilisation"
+            ],
+            [
+              "CPU VUSN",
+              "USN CPU utilisation"
+            ],
+            [
+              "PS Data Traffic LMB-LLG vUGW",
+              "PS data traffic across regions"
+            ],
+            [
+              "vUSN 2G Attach",
+              "2G attach performance"
+            ],
+            [
+              "vUSN 3G Attach",
+              "3G attach performance"
+            ],
+            [
+              "QuickPS-KPIs (4G-PDP)",
+              "4G PS performance"
+            ],
+            [
+              "PS KPI Cloud",
+              "2G / 3G / 4G attach KPI monitoring"
+            ]
+          ]
+        },
+        {
+          "type": "link",
+          "target": "hc-download",
+          "label": "Full HC download walkthrough"
+        }
+      ]
+    }
+  ]
+}

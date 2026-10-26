@@ -1,0 +1,89 @@
+{
+  "problems": [
+    {
+      "id": "browse-fail",
+      "title": "Subscriber Failing to Browse",
+      "description": "A subscriber cannot reach the internet. Start with scope, then profile, then trace.",
+      "category": "Subscriber",
+      "steps": [
+        {
+          "title": "Determine the scope of the issue",
+          "description": "Is it affecting everyone, a specific region, a specific APN, or a single subscriber?",
+          "branches": [
+            {
+              "label": "Single subscriber → Check HSS Profile",
+              "next": 1
+            },
+            {
+              "label": "Everyone / Region / APN → Escalate to L2",
+              "next": 5
+            }
+          ]
+        },
+        {
+          "title": "Check APN on profile (LST OPTGPRS)",
+          "description": "Confirm the subscriber has the APN needed to access the PDN.",
+          "command": "LST OPTGPRS;",
+          "expected": "Required APN present.",
+          "branches": [
+            {
+              "label": "APN Present → Check USN Attach",
+              "next": 2
+            },
+            {
+              "label": "APN Missing → Escalate for Provisioning",
+              "next": 5
+            }
+          ]
+        },
+        {
+          "title": "Check USN attach (DSP SMCTXT)",
+          "description": "Run DSP SMCTXT. The access type shown indicates the current RAT.",
+          "command": "DSP SMCTXT;",
+          "expected": "Record exists showing subscriber session.",
+          "branches": [
+            {
+              "label": "Record exists → Check UGW Context",
+              "next": 3
+            },
+            {
+              "label": "Record does not exist → Escalate",
+              "next": 5
+            }
+          ]
+        },
+        {
+          "title": "Check UGW PDP context",
+          "description": "Run on CGW to check control plane.",
+          "command": "DSP CPPDPCTXT;",
+          "expected": "Uplink and downlink volumes are greater than zero.",
+          "branches": [
+            {
+              "label": "Volumes > 0 → Issue likely external, escalate",
+              "next": 5
+            },
+            {
+              "label": "Both show zero → Proceed to Tracing",
+              "next": 4
+            }
+          ]
+        },
+        {
+          "title": "Trace the subscriber",
+          "description": "Start a signalling trace for the subscriber's IMSI on the USN, then on the CGW and DGW, and capture the result before escalating. See the usn-trace, cgw-trace and dgw-trace screenshots.",
+          "branches": [
+            {
+              "label": "Trace captured → Escalate with evidence",
+              "next": 5
+            }
+          ]
+        },
+        {
+          "title": "Escalate / Provisioning",
+          "description": "Add the missing configuration or escalate to Huawei with evidence.",
+          "branches": []
+        }
+      ]
+    }
+  ]
+}
